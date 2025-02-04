@@ -12,4 +12,7 @@ public @interface LocalQueueMessageListener {
     String selectorTag() default "*";
 
     int maxBatchSize() default 1;
+
+    long pullInterval() default 500;
+
 }

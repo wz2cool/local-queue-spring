@@ -19,13 +19,13 @@ import java.util.concurrent.Executors;
 
 public class LocalQueueMessageListenerContainer {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final ListenerRegistry registry;
     private final LocalQueueProperties properties;
     private final ConfigurableApplicationContext context;
     private final Map<String, ExecutorService> customerIdExecutors = new ConcurrentHashMap<>();
-    private final Map<String, SimpleConsumer> consumers = new ConcurrentHashMap<>();
+    private final Map<String, SimpleConsumer> consumerMap = new ConcurrentHashMap<>();
 
     public LocalQueueMessageListenerContainer(ListenerRegistry registry, LocalQueueProperties properties, ConfigurableApplicationContext context) {
         this.registry = registry;
@@ -34,6 +34,7 @@ public class LocalQueueMessageListenerContainer {
     }
 
     public void start() {
+        logger.info("[local-queue] start local queue listener container");
         Set<String> customerIds = registry.getCustomerIds();
         for (String customerId : customerIds) {
             LocalQueueListener handler = registry.getCustomerHandler(customerId);
@@ -41,6 +42,7 @@ public class LocalQueueMessageListenerContainer {
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             SimpleConsumer consumer = getConsumer(annotation);
             customerIdExecutors.put(customerId, executorService);
+            consumerMap.put(customerId, consumer);
             executorService.execute(() -> {
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
@@ -50,19 +52,24 @@ public class LocalQueueMessageListenerContainer {
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     } catch (Exception e) {
-                        logger.error("consumer error", e);
+                        logger.error("[local-queue] consumer error", e);
                     }
                 }
             });
+            logger.info("[local-queue] start listener container for customerId: {}, selectorTag: {}",
+                    customerId, annotation.selectorTag());
         }
     }
 
     public void stop() {
-        for (Map.Entry<String, ExecutorService> entry : customerIdExecutors.entrySet()) {
-            String customerId = entry.getKey();
-            ExecutorService executorService = entry.getValue();
-            SimpleConsumer consumer = consumers.get(customerId);
+        logger.info("[local-queue] stop local queue listener container");
+        for (Map.Entry<String, SimpleConsumer> entry : consumerMap.entrySet()) {
+            SimpleConsumer consumer = entry.getValue();
             consumer.close();
+        }
+
+        for (Map.Entry<String, ExecutorService> entry : customerIdExecutors.entrySet()) {
+            ExecutorService executorService = entry.getValue();
             executorService.shutdownNow();
         }
     }
@@ -73,9 +80,8 @@ public class LocalQueueMessageListenerContainer {
                 .setConsumerId(annotation.customerId())
                 .setDataDir(new File(dataDir))
                 .setSelectTag(annotation.selectorTag())
+                .setPullInterval(annotation.pullInterval())
                 .build();
-
-
         return new SimpleConsumer(config);
     }
 }

@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.github.wz2cool.localqueue.spring.LocalQueueAutoConfiguration
+com.github.wz2coo.localqueue.spring.autoconfigure.LocalQueueAutoConfiguration
