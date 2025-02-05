@@ -6,7 +6,7 @@
 
     <groupId>com.github.wz2cool</groupId>
     <artifactId>local-queue-spring-boot-starter</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
     <packaging>jar</packaging>
 
     <organization>
@@ -51,11 +51,11 @@
         <tag>master</tag>
     </scm>
 
-    <parent>
+<!--    <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>7</version>
-    </parent>
+    </parent>-->
 
 
     <properties>
@@ -63,7 +63,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.boot.version>2.3.12.RELEASE</spring.boot.version>
-        <local.queue.version>0.2.2</local.queue.version>
+        <local.queue.version>0.2.3</local.queue.version>
     </properties>
 
 

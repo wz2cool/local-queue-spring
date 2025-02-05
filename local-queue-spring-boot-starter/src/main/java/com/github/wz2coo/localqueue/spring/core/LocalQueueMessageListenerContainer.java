@@ -79,7 +79,7 @@ public class LocalQueueMessageListenerContainer {
         SimpleConsumerConfig config = new SimpleConsumerConfig.Builder()
                 .setConsumerId(annotation.customerId())
                 .setDataDir(new File(dataDir))
-                .setSelectTag(annotation.selectorTag())
+                .setSelectorTag(annotation.selectorTag())
                 .setPullInterval(annotation.pullInterval())
                 .build();
         return new SimpleConsumer(config);
