@@ -6,7 +6,7 @@
 
     <groupId>com.github.wz2cool</groupId>
     <artifactId>local-queue-spring-boot-starter</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.7</version>
     <packaging>jar</packaging>
 
     <organization>
@@ -51,19 +51,12 @@
         <tag>master</tag>
     </scm>
 
-<!--    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>-->
-
-
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.boot.version>2.3.12.RELEASE</spring.boot.version>
-        <local.queue.version>0.2.3</local.queue.version>
+        <local.queue.version>0.2.7</local.queue.version>
     </properties>
 
 
@@ -173,16 +166,25 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.8.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                    <id>central</id>
+                    <url>https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+                    <id>central</id>
+                    <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2</url>
                 </repository>
             </distributionManagement>
         </profile>
