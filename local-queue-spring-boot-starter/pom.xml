@@ -9,6 +9,13 @@
     <version>0.2.7</version>
     <packaging>jar</packaging>
 
+    <description>A Spring Boot starter for local queue functionality</description>
+
+    <!-- 添加项目URL -->
+    <url>https://github.com/wz2cool/local-queue-spring-boot-starter</url>
+
+    <name>local-queue-spring-boot-starter</name>
+
     <organization>
         <name>wz2cool</name>
         <url>https://github.com/wz2cool</url>
@@ -17,7 +24,7 @@
     <!-- issue -->
     <issueManagement>
         <system>Github Issue</system>
-        <url>https://github.com/wz2cool/local-queue/issues</url>
+        <url>https://github.com/wz2cool/local-queue-spring/issues</url>
     </issueManagement>
 
     <!-- license -->
@@ -45,9 +52,9 @@
 
     <!-- 代码库 -->
     <scm>
-        <connection>scm:git:git@github.com:wz2cool/local-queue.git</connection>
-        <developerConnection>scm:git:git@github.com:wz2cool/local-queue.git</developerConnection>
-        <url>git@github.com:wz2cool/local-queue.git</url>
+        <connection>scm:git:git@github.com:wz2cool/local-queue-spring.git</connection>
+        <developerConnection>scm:git:git@github.com:wz2cool/local-queue-spring.git</developerConnection>
+        <url>git@github.com:wz2cool/local-queue-spring.git</url>
         <tag>master</tag>
     </scm>
 
