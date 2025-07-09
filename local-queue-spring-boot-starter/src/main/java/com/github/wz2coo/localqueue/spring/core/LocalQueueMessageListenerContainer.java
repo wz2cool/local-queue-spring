@@ -70,7 +70,16 @@ public class LocalQueueMessageListenerContainer {
 
         for (Map.Entry<String, ExecutorService> entry : customerIdExecutors.entrySet()) {
             ExecutorService executorService = entry.getValue();
-            executorService.shutdownNow();
+            executorService.shutdownNow(); // 使用shutdownNow()来中断正在运行的任务
+            try {
+                // 等待线程终止，最多等待5秒
+                if (!executorService.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    logger.warn("[local-queue] ExecutorService did not terminate gracefully for customerId: {}", entry.getKey());
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.warn("[local-queue] Interrupted while waiting for ExecutorService termination");
+            }
         }
     }
 

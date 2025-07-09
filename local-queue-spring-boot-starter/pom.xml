@@ -6,7 +6,7 @@
 
     <groupId>com.github.wz2cool</groupId>
     <artifactId>local-queue-spring-boot-starter</artifactId>
-    <version>0.2.7</version>
+    <version>0.2.7-1</version>
     <packaging>jar</packaging>
 
     <description>A Spring Boot starter for local queue functionality</description>
