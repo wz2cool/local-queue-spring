@@ -26,8 +26,10 @@ public class LocalQueueAutoConfiguration {
 
     @Bean(destroyMethod = "close")
     public IProducer getProducer(LocalQueueProperties localQueueProperties) {
+        String dataDir = localQueueProperties.getProducer().getDataDir();
+        logger.info("[local-queue] init producer with data dir: {}", dataDir);
         SimpleProducerConfig config = new SimpleProducerConfig.Builder()
-                .setDataDir(new File(localQueueProperties.getProducer().getDataDir()))
+                .setDataDir(new File(dataDir))
                 .setKeepDays(localQueueProperties.getProducer().getKeepDays())
                 .build();
         return new SimpleProducer(config);
