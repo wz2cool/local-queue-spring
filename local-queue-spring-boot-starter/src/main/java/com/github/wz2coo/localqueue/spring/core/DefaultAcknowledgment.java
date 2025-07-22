@@ -15,18 +15,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Default message acknowledgment implementation
  */
 public class DefaultAcknowledgment implements Acknowledgment {
-    
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    
+
     private final SimpleConsumer consumer;
     private final List<QueueMessage> messages;
     private final AtomicBoolean acknowledged = new AtomicBoolean(false);
-    
+
     public DefaultAcknowledgment(SimpleConsumer consumer, List<QueueMessage> messages) {
         this.consumer = consumer;
         this.messages = messages;
     }
-    
+
     @Override
     public void acknowledge() {
         if (acknowledged.compareAndSet(false, true)) {
@@ -44,11 +44,12 @@ public class DefaultAcknowledgment implements Acknowledgment {
             logger.warn("[local-queue] Messages already acknowledged");
         }
     }
-    
 
-    
+
     /**
      * Check if already acknowledged
+     *
+     * @return true if acknowledged
      */
     public boolean isAcknowledged() {
         return acknowledged.get();
