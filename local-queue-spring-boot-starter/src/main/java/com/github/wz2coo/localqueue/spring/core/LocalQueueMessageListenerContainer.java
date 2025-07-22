@@ -87,7 +87,9 @@ public class LocalQueueMessageListenerContainer {
 
     private SimpleConsumer getConsumer(LocalQueueListener annotation) {
         String dataDir = properties.getConsumer().getDataDir();
-        logger.debug("[local-queue] consumer data dir: {}", dataDir);
+        if (logger.isDebugEnabled()) {
+            logger.debug("[local-queue] consumer data dir: {}", dataDir);
+        }
         SimpleConsumerConfig config = new SimpleConsumerConfig.Builder()
                 .setConsumerId(annotation.customerId())
                 .setDataDir(new File(dataDir))

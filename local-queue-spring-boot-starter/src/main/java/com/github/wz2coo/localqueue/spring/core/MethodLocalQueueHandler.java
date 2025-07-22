@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Collections;
 import java.util.List;
 
 public class MethodLocalQueueHandler implements LocalQueueHandler {
@@ -74,7 +75,7 @@ public class MethodLocalQueueHandler implements LocalQueueHandler {
         } else if (QueueMessage.class.isAssignableFrom(paramType)) {
             // Parameter is single QueueMessage, call one by one
             for (QueueMessage message : messages) {
-                DefaultAcknowledgment singleAck = new DefaultAcknowledgment(consumer, java.util.Arrays.asList(message));
+                DefaultAcknowledgment singleAck = new DefaultAcknowledgment(consumer, Collections.singletonList(message));
                 try {
                     method.invoke(bean, message);
                     handleAutoAck(singleAck);

@@ -32,7 +32,9 @@ public class DefaultAcknowledgment implements Acknowledgment {
         if (acknowledged.compareAndSet(false, true)) {
             try {
                 consumer.ack(messages);
-                logger.debug("[local-queue] Acknowledged {} messages", messages.size());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("[local-queue] Acknowledged {} messages", messages.size());
+                }
             } catch (Exception e) {
                 logger.error("[local-queue] Failed to acknowledge messages", e);
                 acknowledged.set(false); // Reset state to allow retry
