@@ -16,26 +16,5 @@ public interface Acknowledgment {
      */
     void acknowledge();
     
-    /**
-     * Acknowledge the specified message
-     * @param message the message to acknowledge
-     */
-    void acknowledge(QueueMessage message);
-    
-    /**
-     * Batch acknowledge messages
-     * @param messages the list of messages to acknowledge
-     */
-    void acknowledge(List<QueueMessage> messages);
-    
-    /**
-     * Reject message, the message will re-enter the queue
-     */
-    void reject();
-    
-    /**
-     * Reject the specified message
-     * @param message the message to reject
-     */
-    void reject(QueueMessage message);
+
 }

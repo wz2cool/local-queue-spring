@@ -32,8 +32,7 @@ public class MethodLocalQueueHandler implements LocalQueueHandler {
     
     @Override
     public void onMessages(List<QueueMessage> messages, SimpleConsumer consumer) {
-        DefaultAcknowledgment acknowledgment = new DefaultAcknowledgment(consumer, messages);
-        boolean shouldAutoAck = true;
+        DefaultAcknowledgment batchAcknowledgment = new DefaultAcknowledgment(consumer, messages);
         
         try {
             Parameter[] parameters = method.getParameters();
@@ -41,19 +40,13 @@ public class MethodLocalQueueHandler implements LocalQueueHandler {
             if (parameters.length == 0) {
                 // No parameter method
                 method.invoke(bean);
+                handleAutoAck(batchAcknowledgment);
             } else if (parameters.length == 1) {
-                invokeWithSingleParameter(parameters[0], messages, acknowledgment);
+                invokeWithSingleParameter(parameters[0], messages, consumer, batchAcknowledgment);
             } else if (parameters.length == 2) {
-                invokeWithTwoParameters(parameters, messages, acknowledgment);
+                invokeWithTwoParameters(parameters, messages, consumer, batchAcknowledgment);
             } else {
                 logger.warn("Unsupported method signature with {} parameters", parameters.length);
-            }
-            
-            // Decide whether to auto acknowledge based on ACK mode
-            if (ackMode == AckMode.AUTO || ackMode == AckMode.AUTO_SUCCESS) {
-                if (!acknowledgment.isAcknowledged()) {
-                    acknowledgment.acknowledge();
-                }
             }
             
         } catch (Exception e) {
@@ -61,74 +54,127 @@ public class MethodLocalQueueHandler implements LocalQueueHandler {
             
             // If AUTO_SUCCESS mode and exception occurs, do not ACK
             if (ackMode == AckMode.AUTO_SUCCESS) {
-                shouldAutoAck = false;
                 logger.info("[local-queue] Message not acknowledged due to exception in AUTO_SUCCESS mode");
-            } else if (ackMode == AckMode.AUTO && !acknowledgment.isAcknowledged()) {
+            } else if (ackMode == AckMode.AUTO && !batchAcknowledgment.isAcknowledged()) {
                 // In AUTO mode, ACK even if there are exceptions
-                acknowledgment.acknowledge();
+                batchAcknowledgment.acknowledge();
             }
             
             throw new RuntimeException("Failed to invoke listener method", e);
         }
     }
     
-    private void invokeWithSingleParameter(Parameter parameter, List<QueueMessage> messages, Acknowledgment acknowledgment) throws Exception {
+    private void invokeWithSingleParameter(Parameter parameter, List<QueueMessage> messages, SimpleConsumer consumer, DefaultAcknowledgment batchAcknowledgment) throws Exception {
         Class<?> paramType = parameter.getType();
         
         if (List.class.isAssignableFrom(paramType)) {
-            // Parameter is List<QueueMessage>
+            // Parameter is List<QueueMessage> - batch processing
             method.invoke(bean, messages);
+            handleAutoAck(batchAcknowledgment);
         } else if (QueueMessage.class.isAssignableFrom(paramType)) {
             // Parameter is single QueueMessage, call one by one
             for (QueueMessage message : messages) {
-                method.invoke(bean, message);
+                DefaultAcknowledgment singleAck = new DefaultAcknowledgment(consumer, java.util.Arrays.asList(message));
+                try {
+                    method.invoke(bean, message);
+                    handleAutoAck(singleAck);
+                } catch (Exception e) {
+                    handleExceptionForSingleMessage(singleAck, e);
+                }
             }
         } else if (Acknowledgment.class.isAssignableFrom(paramType)) {
-            // Parameter is Acknowledgment
-            method.invoke(bean, acknowledgment);
+            // Parameter is Acknowledgment - batch processing
+            method.invoke(bean, batchAcknowledgment);
+            // No auto ACK here, user controls it manually
         } else {
             logger.warn("Unsupported parameter type: {}", paramType.getName());
         }
     }
     
-    private void invokeWithTwoParameters(Parameter[] parameters, List<QueueMessage> messages, Acknowledgment acknowledgment) throws Exception {
+    private void invokeWithTwoParameters(Parameter[] parameters, List<QueueMessage> messages, SimpleConsumer consumer, DefaultAcknowledgment batchAcknowledgment) throws Exception {
         Class<?> param1Type = parameters[0].getType();
         Class<?> param2Type = parameters[1].getType();
         
-        Object arg1 = null;
-        Object arg2 = null;
+        // Check if this is single message processing (first param is QueueMessage)
+        boolean isSingleMessageProcessing = QueueMessage.class.isAssignableFrom(param1Type) && !List.class.isAssignableFrom(param1Type);
         
-        // Determine first parameter
-        if (List.class.isAssignableFrom(param1Type)) {
-            arg1 = messages;
-        } else if (QueueMessage.class.isAssignableFrom(param1Type)) {
-            // For single message, only process the first one
-            arg1 = messages.isEmpty() ? null : messages.get(0);
-        } else if (Acknowledgment.class.isAssignableFrom(param1Type)) {
-            arg1 = acknowledgment;
-        }
-        
-        // Determine second parameter
-        if (Acknowledgment.class.isAssignableFrom(param2Type)) {
-            arg2 = acknowledgment;
-        } else if (QueueMessage.class.isAssignableFrom(param2Type) && arg1 != acknowledgment) {
-            arg2 = messages.isEmpty() ? null : messages.get(0);
-        } else if (List.class.isAssignableFrom(param2Type) && arg1 != messages) {
-            arg2 = messages;
-        }
-        
-        if (arg1 != null && arg2 != null) {
-            if (QueueMessage.class.isAssignableFrom(param1Type) && !List.class.isAssignableFrom(param1Type)) {
-                // If first parameter is single QueueMessage, process one by one
-                for (QueueMessage message : messages) {
-                    method.invoke(bean, message, arg2);
+        if (isSingleMessageProcessing) {
+            // Process each message individually
+            for (QueueMessage message : messages) {
+                DefaultAcknowledgment singleAck = new DefaultAcknowledgment(consumer, java.util.Arrays.asList(message));
+                Object arg2 = null;
+                
+                // Determine second parameter
+                if (Acknowledgment.class.isAssignableFrom(param2Type)) {
+                    arg2 = singleAck;
+                } else if (QueueMessage.class.isAssignableFrom(param2Type)) {
+                    arg2 = message;
                 }
-            } else {
-                method.invoke(bean, arg1, arg2);
+                
+                if (arg2 != null) {
+                    try {
+                        method.invoke(bean, message, arg2);
+                        if (!Acknowledgment.class.isAssignableFrom(param2Type)) {
+                            // Only auto ACK if second param is not Acknowledgment
+                            handleAutoAck(singleAck);
+                        }
+                    } catch (Exception e) {
+                        handleExceptionForSingleMessage(singleAck, e);
+                    }
+                } else {
+                    logger.warn("Unsupported second parameter type for single message processing: {}", param2Type.getName());
+                }
             }
         } else {
-            logger.warn("Unsupported two-parameter method signature: {} and {}", param1Type.getName(), param2Type.getName());
+            // Batch processing
+            Object arg1 = null;
+            Object arg2 = null;
+            
+            // Determine first parameter
+            if (List.class.isAssignableFrom(param1Type)) {
+                arg1 = messages;
+            } else if (Acknowledgment.class.isAssignableFrom(param1Type)) {
+                arg1 = batchAcknowledgment;
+            }
+            
+            // Determine second parameter
+            if (Acknowledgment.class.isAssignableFrom(param2Type)) {
+                arg2 = batchAcknowledgment;
+            } else if (List.class.isAssignableFrom(param2Type) && arg1 != messages) {
+                arg2 = messages;
+            }
+            
+            if (arg1 != null && arg2 != null) {
+                method.invoke(bean, arg1, arg2);
+                if (!Acknowledgment.class.isAssignableFrom(param1Type) && !Acknowledgment.class.isAssignableFrom(param2Type)) {
+                    // Only auto ACK if neither param is Acknowledgment
+                    handleAutoAck(batchAcknowledgment);
+                }
+            } else {
+                logger.warn("Unsupported two-parameter method signature: {} and {}", param1Type.getName(), param2Type.getName());
+            }
         }
+    }
+    
+    private void handleAutoAck(DefaultAcknowledgment acknowledgment) {
+        // Decide whether to auto acknowledge based on ACK mode
+        if (ackMode == AckMode.AUTO || ackMode == AckMode.AUTO_SUCCESS) {
+            if (!acknowledgment.isAcknowledged()) {
+                acknowledgment.acknowledge();
+            }
+        }
+    }
+    
+    private void handleExceptionForSingleMessage(DefaultAcknowledgment singleAck, Exception e) throws Exception {
+        // If AUTO_SUCCESS mode and exception occurs, do not ACK
+        if (ackMode == AckMode.AUTO_SUCCESS) {
+            logger.info("[local-queue] Single message not acknowledged due to exception in AUTO_SUCCESS mode");
+        } else if (ackMode == AckMode.AUTO && !singleAck.isAcknowledged()) {
+            // In AUTO mode, ACK even if there are exceptions
+            singleAck.acknowledge();
+        }
+        
+        throw e;
     }
     
     public Object getBean() {

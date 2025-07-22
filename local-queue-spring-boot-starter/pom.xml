@@ -6,7 +6,7 @@
 
     <groupId>com.github.wz2cool</groupId>
     <artifactId>local-queue-spring-boot-starter</artifactId>
-    <version>0.2.6</version>
+    <version>0.2.7-2</version>
     <packaging>jar</packaging>
 
     <description>A Spring Boot starter for local queue functionality</description>
@@ -63,7 +63,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.boot.version>2.3.12.RELEASE</spring.boot.version>
-        <local.queue.version>0.2.6</local.queue.version>
+        <local.queue.version>0.2.7</local.queue.version>
     </properties>
 
 
