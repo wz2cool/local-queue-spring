@@ -2,6 +2,7 @@ package com.github.wz2coo.localqueue.spring.core;
 
 import com.github.wz2coo.localqueue.spring.annotation.LocalQueueMessageListener;
 import com.github.wz2coo.localqueue.spring.autoconfigure.LocalQueueProperties;
+import com.github.wz2coo.localqueue.spring.model.AckMode;
 import com.github.wz2cool.localqueue.impl.SimpleConsumer;
 import com.github.wz2cool.localqueue.model.config.SimpleConsumerConfig;
 import com.github.wz2cool.localqueue.model.message.QueueMessage;
@@ -47,8 +48,10 @@ public class LocalQueueMessageListenerContainer {
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         List<QueueMessage> queueMessages = consumer.batchTake(annotation.maxBatchSize());
-                        handler.onMessages(queueMessages);
-                        consumer.ack(queueMessages);
+                        handler.onMessages(queueMessages, consumer);
+                        if (annotation.ackMode() == AckMode.AUTO) {
+                            consumer.ack(queueMessages);
+                        }
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     } catch (Exception e) {

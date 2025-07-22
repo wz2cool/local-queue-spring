@@ -1,5 +1,7 @@
 package com.github.wz2coo.localqueue.spring.annotation;
 
+import com.github.wz2coo.localqueue.spring.model.AckMode;
+
 import java.lang.annotation.*;
 
 @Target(ElementType.TYPE)
@@ -15,4 +17,5 @@ public @interface LocalQueueMessageListener {
 
     long pullInterval() default 500;
 
+    AckMode ackMode() default AckMode.AUTO;
 }
