@@ -6,12 +6,12 @@
 
     <groupId>com.github.wz2cool</groupId>
     <artifactId>local-queue-spring-boot-starter</artifactId>
-    <version>0.2.7-1</version>
+    <version>0.2.6</version>
     <packaging>jar</packaging>
 
     <description>A Spring Boot starter for local queue functionality</description>
 
-    <!-- 添加项目URL -->
+    <!-- Add project URL -->
     <url>https://github.com/wz2cool/local-queue-spring-boot-starter</url>
 
     <name>local-queue-spring-boot-starter</name>
@@ -35,7 +35,7 @@
         </license>
     </licenses>
 
-    <!-- 开发者 -->
+    <!-- Developers -->
     <developers>
         <developer>
             <id>wz2cool</id>
@@ -50,7 +50,7 @@
         </developer>
     </developers>
 
-    <!-- 代码库 -->
+    <!-- Source code repository -->
     <scm>
         <connection>scm:git:git@github.com:wz2cool/local-queue-spring.git</connection>
         <developerConnection>scm:git:git@github.com:wz2cool/local-queue-spring.git</developerConnection>
@@ -63,7 +63,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.boot.version>2.3.12.RELEASE</spring.boot.version>
-        <local.queue.version>0.2.7</local.queue.version>
+        <local.queue.version>0.2.6</local.queue.version>
     </properties>
 
 
@@ -85,6 +85,20 @@
             <artifactId>local-queue</artifactId>
             <version>${local.queue.version}</version>
         </dependency>
+        
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.8.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>3.12.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -97,6 +111,11 @@
                     <source>1.8</source>
                     <target>1.8</target>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
             </plugin>
             <plugin>
                 <groupId>org.eluder.coveralls</groupId>
