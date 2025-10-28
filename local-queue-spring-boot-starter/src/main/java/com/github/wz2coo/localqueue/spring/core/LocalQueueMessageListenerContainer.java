@@ -1,7 +1,7 @@
 package com.github.wz2coo.localqueue.spring.core;
 
-import com.github.wz2coo.localqueue.spring.annotation.LocalQueueMessageListener;
 import com.github.wz2coo.localqueue.spring.autoconfigure.LocalQueueProperties;
+import com.github.wz2coo.localqueue.spring.annotation.LocalQueueListener;
 import com.github.wz2cool.localqueue.impl.SimpleConsumer;
 import com.github.wz2cool.localqueue.model.config.SimpleConsumerConfig;
 import com.github.wz2cool.localqueue.model.message.QueueMessage;
@@ -27,7 +27,8 @@ public class LocalQueueMessageListenerContainer {
     private final Map<String, ExecutorService> customerIdExecutors = new ConcurrentHashMap<>();
     private final Map<String, SimpleConsumer> consumerMap = new ConcurrentHashMap<>();
 
-    public LocalQueueMessageListenerContainer(ListenerRegistry registry, LocalQueueProperties properties, ConfigurableApplicationContext context) {
+    public LocalQueueMessageListenerContainer(ListenerRegistry registry, LocalQueueProperties properties,
+            ConfigurableApplicationContext context) {
         this.registry = registry;
         this.properties = properties;
         this.context = context;
@@ -37,8 +38,8 @@ public class LocalQueueMessageListenerContainer {
         logger.info("[local-queue] start local queue listener container");
         Set<String> customerIds = registry.getCustomerIds();
         for (String customerId : customerIds) {
-            LocalQueueListener handler = registry.getCustomerHandler(customerId);
-            LocalQueueMessageListener annotation = registry.getCustomerAnnotation(customerId);
+            LocalQueueHandler handler = registry.getCustomerHandler(customerId);
+            LocalQueueListener annotation = registry.getCustomerAnnotation(customerId);
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             SimpleConsumer consumer = getConsumer(annotation);
             customerIdExecutors.put(customerId, executorService);
@@ -47,8 +48,8 @@ public class LocalQueueMessageListenerContainer {
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         List<QueueMessage> queueMessages = consumer.batchTake(annotation.maxBatchSize());
-                        handler.onMessages(queueMessages);
-                        consumer.ack(queueMessages);
+                        handler.onMessages(queueMessages, consumer);
+                        // ACK is now handled inside the handler based on ACK mode
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     } catch (Exception e) {
@@ -70,11 +71,12 @@ public class LocalQueueMessageListenerContainer {
 
         for (Map.Entry<String, ExecutorService> entry : customerIdExecutors.entrySet()) {
             ExecutorService executorService = entry.getValue();
-            executorService.shutdownNow(); // 使用shutdownNow()来中断正在运行的任务
+            executorService.shutdownNow(); // Use shutdownNow() to interrupt running tasks
             try {
-                // 等待线程终止，最多等待5秒
+                // Wait for thread termination, maximum 5 seconds
                 if (!executorService.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
-                    logger.warn("[local-queue] ExecutorService did not terminate gracefully for customerId: {}", entry.getKey());
+                    logger.warn("[local-queue] ExecutorService did not terminate gracefully for customerId: {}",
+                            entry.getKey());
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -83,9 +85,11 @@ public class LocalQueueMessageListenerContainer {
         }
     }
 
-    private SimpleConsumer getConsumer(LocalQueueMessageListener annotation) {
+    private SimpleConsumer getConsumer(LocalQueueListener annotation) {
         String dataDir = properties.getConsumer().getDataDir();
-        logger.debug("[local-queue] consumer data dir: {}", dataDir);
+        if (logger.isDebugEnabled()) {
+            logger.debug("[local-queue] consumer data dir: {}", dataDir);
+        }
         SimpleConsumerConfig config = new SimpleConsumerConfig.Builder()
                 .setConsumerId(annotation.customerId())
                 .setDataDir(new File(dataDir))
